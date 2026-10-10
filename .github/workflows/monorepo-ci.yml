@@ -1,0 +1,53 @@
+name: Monorepo CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run build
+
+  backend:
+    name: Backend typecheck and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run build
+
+  database-safety:
+    name: Database migration safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure database changes do not contain common destructive statements
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find database/supabase/migrations -type f -name '*.sql' -print0 | xargs -0 -r grep -Ein 'DROP[[:space:]]+(TABLE|SCHEMA|DATABASE)|TRUNCATE[[:space:]]+'; then
+            echo "Potentially destructive SQL detected; review required."
+            exit 1
+          fi
+          echo "No common destructive SQL statements found."
