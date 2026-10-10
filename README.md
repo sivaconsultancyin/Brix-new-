@@ -1,17 +1,15 @@
-# Brix Frontend
+# Brix Platform Monorepo
 
-Mobile-first React + Vite + TypeScript dashboard for the Brix game platform.
+Brix frontend, backend and Supabase database change-management live in one repository, while each service can still be deployed independently.
 
-## Scope
+## Repository layout
 
-- Frontend only; backend and database are separate repositories.
-- Each game has its own API module under `src/games/<game>/api.ts`.
-- Shared code is limited to common UI and API transport.
-- No Supabase credentials, service-role keys, or direct database access belong in this frontend.
-- Game APIs are placeholders until the separate backend contract is implemented.
-- No live game engine or real-money betting is implemented in this foundation.
+- `src/` — React + Vite + TypeScript frontend (kept at repository root to preserve the current Netlify build setup).
+- `backend/` — Node.js + Express + TypeScript + Socket.IO API service.
+- `database/supabase/migrations/` — reviewed, forward-only Supabase SQL migrations.
+- `.github/workflows/` — frontend/backend build checks and database migration safety checks.
 
-## Local development
+## Frontend
 
 ```bash
 npm install
@@ -19,18 +17,29 @@ cp .env.example .env
 npm run dev
 ```
 
-Set `VITE_API_BASE_URL` to the public backend URL when the backend is ready. Only public values may use the `VITE_` prefix.
+Set `VITE_API_BASE_URL` to the backend URL. Never put database credentials or Supabase service-role keys in frontend variables.
 
-## Checks
+## Backend
 
 ```bash
-npm run typecheck
-npm run build
+cd backend
+npm install
+cp .env.example .env
+npm run dev
 ```
+
+Health endpoint: `/health`; Socket.IO path: `/ws`. The current backend is a foundation only; authentication, database access, wallets and game engines are not yet implemented.
+
+## Database safety
+
+The existing Supabase project contains live schema/data. This repository does not reset or automatically migrate production. Inspect the real schema, test forward-only migrations against a development database, and review them before any production application. Never commit secrets.
 
 ## Deployment
 
-Netlify build command: `npm install && npm run build`
-Publish directory: `dist`
+- Frontend: Netlify builds from repository root using `npm install && npm run build`, publish directory `dist`.
+- Backend: deploy the `backend/` directory as a separate Node service (for example on Render or Cloud Run), with its own environment variables.
+- Database: existing Supabase PostgreSQL project; schema changes are managed through reviewed migrations.
 
-Configure the Netlify site to build from this repository root.
+## Current status
+
+The frontend is a UI foundation and game API modules are placeholders. The backend only exposes health/realtime connection scaffolding. This is not yet a complete or production-ready game platform.
